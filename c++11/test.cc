@@ -33,17 +33,21 @@ int main(){
     auto d = mul(a, a);
     auto e = mul(a, d);
 
-    auto f = constant(1.1);
-    auto g = scale(f, 2);
-    auto h = mul(g, g);
-
     cout << to_vector(slice(a, 10)) << endl;
     cout << to_vector(slice(b, 10)) << endl;
     cout << to_vector(slice(c, 10)) << endl;
     cout << to_vector(slice(d, 10)) << endl;
     cout << to_vector(slice(e, 10)) << endl;
 
+    auto f = constant(1.1);
+    auto g = scale(f, 2);
+    auto h = mul(g, g);
+
     cout << to_vector(slice(h, 10)) << endl;
+
+    auto i = scale2(f, 1.1);
+
+    cout << to_vector(slice(i, 10)) << endl;
 
     return 0;
 }

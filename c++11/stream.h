@@ -1,20 +1,12 @@
 #include <bits/stdc++.h>
 
-using std::cin;
-using std::cout;
+namespace StreamTool{
+
 using std::cerr;
 using std::endl;
-using std::ostream;
-
-using std::enable_if;
-using std::is_same;
-
-using std::iterator_traits;
-using std::tuple;
-using std::get;
-using std::pair;
-using std::vector;
 using std::string;
+
+using std::result_of;
 
 using std::function;
 using std::shared_ptr;
@@ -96,6 +88,11 @@ Stream<T> cons(T &car, Stream<T> cdr){
     return stream(car, [cdr](){return cdr;});
 }
 
+template<typename F, typename T, typename R = typename result_of<F(T)>::type>
+Stream<R> map(F func, Stream<T> s){
+    return s->empty() ? _Stream<R>::Empty : stream<R>(func(car(s)), [=](){return map(func, cdr(s));});
+}
+
 template<typename T>
 Stream<T> slice(Stream<T> s, size_t n){
     return n == 0 ? s->Empty : stream<T>(car(s), [s, n](){return slice(cdr(s), n - 1);}, "slice");
@@ -111,6 +108,11 @@ template<typename T1, typename T2, typename T3 = decltype(T1() * T2())>
 Stream<T3> scale(Stream<T1> a, const T2 &b){
     return a->empty() ? _Stream<T3>::Empty
             : stream<T3>(car(a) * b, [=](){return scale(cdr(a), b);}, "scale");
+}
+
+template<typename T1, typename T2, typename T3 = decltype(T1() * T2())>
+Stream<T3> scale2(Stream<T1> a, const T2 &b){
+    return map([=](T1 x)->T3{return x * b;}, a);
 }
 
 template<typename T1, typename T2, typename T3 = decltype(T1() * T2())>
@@ -132,42 +134,4 @@ Stream<int> integer(){
     return ret;
 }
 
-template<typename T>
-vector<T> to_vector(Stream<T> s){
-    vector<T> ret;
-    while (!s->empty()){
-        ret.push_back(car(s));
-        s = cdr(s);
-    }
-    return ret;
-}
-
-template <typename T>
-ostream &operator <<(ostream &os, const vector<T> &vec){
-    os << "[";
-    for (auto &elem: vec)
-        os << elem << ",";
-    return os << "]";
-}
-
-int main(){
-    auto a = constant(1);
-    auto b = integer();
-    auto c = scale(a, 2);
-    auto d = mul(a, a);
-    auto e = mul(a, d);
-
-    auto f = constant(1.0);
-    auto g = scale(f, 2);
-    auto h = mul(g, g);
-
-    cout << to_vector(slice(a, 10)) << endl;
-    cout << to_vector(slice(b, 10)) << endl;
-    cout << to_vector(slice(c, 10)) << endl;
-    cout << to_vector(slice(d, 10)) << endl;
-    cout << to_vector(slice(e, 10)) << endl;
-
-    cout << to_vector(slice(h, 10)) << endl;
-
-    return 0;
 }

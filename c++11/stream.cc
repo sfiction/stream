@@ -121,7 +121,7 @@ Stream<T3> mul(Stream<T1> a, Stream<T2> b){
 
 template<typename T>
 Stream<T> constant(const T &c){
-    Stream<T> ret = stream<T>(c, FStream<int>(), "constant");
+    Stream<T> ret = stream<T>(c, FStream<T>(), "constant");
     ret->cdr([ret](){return ret;});
     return ret;
 }
@@ -151,17 +151,23 @@ ostream &operator <<(ostream &os, const vector<T> &vec){
 }
 
 int main(){
-    auto a = constant<int>(1);
+    auto a = constant(1);
     auto b = integer();
     auto c = scale(a, 2);
     auto d = mul(a, a);
     auto e = mul(a, d);
+
+    auto f = constant(1.0);
+    auto g = scale(f, 2);
+    auto h = mul(g, g);
 
     cout << to_vector(slice(a, 10)) << endl;
     cout << to_vector(slice(b, 10)) << endl;
     cout << to_vector(slice(c, 10)) << endl;
     cout << to_vector(slice(d, 10)) << endl;
     cout << to_vector(slice(e, 10)) << endl;
+
+    cout << to_vector(slice(h, 10)) << endl;
 
     return 0;
 }

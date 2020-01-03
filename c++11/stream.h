@@ -12,16 +12,16 @@ using std::function;
 using std::shared_ptr;
 using std::make_shared;
 
-template<typename T>
+template<class T>
 class _Stream;
 
-template<typename T>
+template<class T>
 using Stream = shared_ptr<_Stream<T>>;
 
-template<typename T>
+template<class T>
 using FStream = function<Stream<T>()>;
 
-template<typename T>
+template<class T>
 class _Stream{
     T car_;
     FStream<T> compute_cdr;
@@ -65,63 +65,63 @@ public:
     static Stream<T> Empty;
 };
 
-template<typename T, class... Args>
+template<class T, class... Args>
 Stream<T> stream(Args&&... args){
     return make_shared<_Stream<T>>(std::forward<Args>(args)...);
 }
 
-template<typename T>
+template<class T>
 Stream<T> _Stream<T>::Empty = stream<T>(T(), FStream<T>(), "empty", true);
 
-template<typename T>
+template<class T>
 T &car(Stream<T> s){
     return s->car();
 }
 
-template<typename T>
+template<class T>
 Stream<T> cdr(Stream<T> s){
     return s->cdr();
 }
 
-template<typename T>
+template<class T>
 Stream<T> cons(T &car, Stream<T> cdr){
-    return stream(car, [cdr](){return cdr;});
+    return stream(car, [cdr](){return cdr;}, "cons");
 }
 
-template<typename F, typename T, typename R = typename result_of<F(T)>::type>
+template<class F, class T, class R = typename result_of<F(T)>::type>
 Stream<R> map(F func, Stream<T> s){
-    return s->empty() ? _Stream<R>::Empty : stream<R>(func(car(s)), [=](){return map(func, cdr(s));});
+    return s->empty() ? _Stream<R>::Empty : stream<R>(func(car(s)), [=](){return map(func, cdr(s));}, "map");
 }
 
-template<typename T>
+template<class T>
 Stream<T> slice(Stream<T> s, size_t n){
     return n == 0 ? s->Empty : stream<T>(car(s), [s, n](){return slice(cdr(s), n - 1);}, "slice");
 }
 
-template<typename T1, typename T2, typename T3 = decltype(T1() + T2())>
+template<class T1, class T2, class T3 = decltype(T1() + T2())>
 Stream<T3> add(Stream<T1> a, Stream<T2> b){
     return a->empty() || b->empty() ? _Stream<T3>::Empty
             : stream<T3>(car(a) + car(b), [=](){return add(cdr(a), cdr(b));}, "add");
 }
 
-template<typename T1, typename T2, typename T3 = decltype(T1() * T2())>
+template<class T1, class T2, class T3 = decltype(T1() * T2())>
 Stream<T3> scale(Stream<T1> a, const T2 &b){
     return a->empty() ? _Stream<T3>::Empty
             : stream<T3>(car(a) * b, [=](){return scale(cdr(a), b);}, "scale");
 }
 
-template<typename T1, typename T2, typename T3 = decltype(T1() * T2())>
+template<class T1, class T2, class T3 = decltype(T1() * T2())>
 Stream<T3> scale2(Stream<T1> a, const T2 &b){
     return map([=](T1 x)->T3{return x * b;}, a);
 }
 
-template<typename T1, typename T2, typename T3 = decltype(T1() * T2())>
+template<class T1, class T2, class T3 = decltype(T1() * T2())>
 Stream<T3> mul(Stream<T1> a, Stream<T2> b){
     return a->empty() || b->empty() ? _Stream<T3>::Empty
             : stream<T3>(car(a) * car(b), [=](){return add(scale(cdr(a), car(b)), mul(a, cdr(b)));}, "mul");
 }
 
-template<typename T>
+template<class T>
 Stream<T> constant(const T &c){
     Stream<T> ret = stream<T>(c, FStream<T>(), "constant");
     ret->cdr([ret](){return ret;});

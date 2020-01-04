@@ -134,14 +134,40 @@ Stream<T> constant(const T &c){
 }
 
 template<class T1, class T2, class T3 = decltype(T1() + T2())>
-Stream<T3> add(Stream<T1> a, Stream<T2> b){
-    return a->empty() || b->empty() ? _Stream<T3>::Empty
-            : stream<T3>(car(a) + car(b), [=](){return add(cdr(a), cdr(b));}, "add");
+Stream<T3> add2(Stream<T1> a, Stream<T2> b){
+    return map([=](const T1 &x, const T2 &y){return x + y;}, a, b);
 }
 
 template<class T1, class T2, class T3 = decltype(T1() + T2())>
-Stream<T3> add2(Stream<T1> a, Stream<T2> b){
-    return map([=](const T1 &x, const T2 &y){return x + y;}, a, b);
+Stream<T3> add2(Stream<T1> a, const T2 &b){
+    return map([=](const T1 &x)->T3{return x + b;}, a);
+}
+
+template<class T1, class T2, class T3 = decltype(T1() * T2())>
+Stream<T3> scale2(Stream<T1> a, const T2 &b){
+    return map([=](const T1 &x)->T3{return x * b;}, a);
+}
+
+template<class T1, class T2, class T3 = decltype(T1() - T2())>
+Stream<T3> sub2(Stream<T1> a, Stream<T2> b){
+    return map([=](const T1 &x, const T2 &y){return x - y;}, a, b);
+}
+
+/* arithmetic operations */
+
+template<class T>
+Stream<T> zero(){
+    static Stream<T> ret;
+    if (!ret)
+        ret = constant<T>(0);
+    return ret;
+}
+
+template<class T1, class T2, class T3 = decltype(T1() + T2())>
+Stream<T3> add(Stream<T1> a, Stream<T2> b){
+    return a->empty() ? b
+            : b->empty() ? a
+            : stream<T3>(car(a) + car(b), [=](){return add(cdr(a), cdr(b));}, "add");
 }
 
 template<class T1, class T2, class T3 = decltype(T1() * T2())>
@@ -157,24 +183,14 @@ Stream<T3> dot2(Stream<T1> a, Stream<T2> b){
 
 template<class T1, class T2, class T3 = decltype(T1() + T2())>
 Stream<T3> add(Stream<T1> a, const T2 &b){
-    return a->empty() ? _Stream<T3>::Empty
+    return a->empty() ? constant(b)
             : stream<T3>(car(a) + b, [=](){return scale(cdr(a), b);}, "add_c");
-}
-
-template<class T1, class T2, class T3 = decltype(T1() + T2())>
-Stream<T3> add2(Stream<T1> a, const T2 &b){
-    return map([=](const T1 &x)->T3{return x + b;}, a);
 }
 
 template<class T1, class T2, class T3 = decltype(T1() * T2())>
 Stream<T3> scale(Stream<T1> a, const T2 &b){
-    return a->empty() ? _Stream<T3>::Empty
+    return a->empty() || b == T2() ? _Stream<T3>::Empty
             : stream<T3>(car(a) * b, [=](){return scale(cdr(a), b);}, "scale");
-}
-
-template<class T1, class T2, class T3 = decltype(T1() * T2())>
-Stream<T3> scale2(Stream<T1> a, const T2 &b){
-    return map([=](const T1 &x)->T3{return x * b;}, a);
 }
 
 template<class T1, class T2, class T3 = decltype(T1() * T2())>
@@ -184,13 +200,9 @@ Stream<T3> scale3(Stream<T1> a, const T2 &b){
 
 template<class T1, class T2, class T3 = decltype(T1() - T2())>
 Stream<T3> sub(Stream<T1> a, Stream<T2> b){
-    return a->empty() || b->empty() ? _Stream<T3>::Empty
+    return a->empty() ? scale(b, -1)
+            : b->empty() ? a
             : stream<T3>(car(a) - car(b), [=](){return sub(cdr(a), cdr(b));}, "add");
-}
-
-template<class T1, class T2, class T3 = decltype(T1() - T2())>
-Stream<T3> sub2(Stream<T1> a, Stream<T2> b){
-    return map([=](const T1 &x, const T2 &y){return x - y;}, a, b);
 }
 
 template<class T1, class T2, class T3 = decltype(T1() + T2())>
@@ -202,6 +214,21 @@ template<class T1, class T2, class T3 = decltype(T1() * T2())>
 Stream<T3> mul(Stream<T1> a, Stream<T2> b){
     return a->empty() || b->empty() ? _Stream<T3>::Empty
             : stream<T3>(car(a) * car(b), [=](){return add(scale(cdr(a), car(b)), mul(a, cdr(b)));}, "mul");
+}
+
+template<class T1, class T2, class T3 = decltype(T1() / T2())>
+Stream<T3> div(Stream<T1> a, Stream<T2> b){
+    if (b->empty())
+        throw exception();
+    if (a->empty())
+        return _Stream<T3>::Empty;
+    T3 val = car(a) / car(b);
+    return stream<T3>(val, [=](){return div(sub(cdr(a), scale(cdr(b), val)), b);}, "div");
+}
+
+template<class T1, class T2 = decltype(1.0 / T1())>
+Stream<T2> inv(Stream<T1> a){
+    return div(unit(1.0), a);
 }
 
 bool is_empty_range(int begin, int end, int step){

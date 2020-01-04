@@ -93,15 +93,44 @@ Stream<R> map(F func, Stream<T> s){
     return s->empty() ? _Stream<R>::Empty : stream<R>(func(car(s)), [=](){return map(func, cdr(s));}, "map");
 }
 
+template<class F, class T1, class T2, class R = typename result_of<F(T1, T2)>::type>
+Stream<R> map(F func, Stream<T1> a, Stream<T2> b){
+    return a->empty() || b->empty() ? _Stream<R>::Empty
+            : stream<R>(func(car(a), car(b)), [=](){return map(func, cdr(a), cdr(b));}, "map");
+}
+
 template<class T>
 Stream<T> slice(Stream<T> s, size_t n){
     return n == 0 ? s->Empty : stream<T>(car(s), [s, n](){return slice(cdr(s), n - 1);}, "slice");
+}
+
+template<class T>
+Stream<T> constant(const T &c){
+    Stream<T> ret = stream<T>(c, FStream<T>(), "constant");
+    ret->cdr([ret](){return ret;});
+    return ret;
 }
 
 template<class T1, class T2, class T3 = decltype(T1() + T2())>
 Stream<T3> add(Stream<T1> a, Stream<T2> b){
     return a->empty() || b->empty() ? _Stream<T3>::Empty
             : stream<T3>(car(a) + car(b), [=](){return add(cdr(a), cdr(b));}, "add");
+}
+
+template<class T1, class T2, class T3 = decltype(T1() + T2())>
+Stream<T3> add2(Stream<T1> a, Stream<T2> b){
+    return map([=](const T1 &x, const T2 &y){return x + y;}, a, b);
+}
+
+template<class T1, class T2, class T3 = decltype(T1() * T2())>
+Stream<T3> dot(Stream<T1> a, Stream<T2> b){
+    return a->empty() || b->empty() ? _Stream<T3>::Empty
+            : stream<T3>(car(a) * car(b), [=](){return dot(cdr(a), cdr(b));}, "dot");
+}
+
+template<class T1, class T2, class T3 = decltype(T1() * T2())>
+Stream<T3> dot2(Stream<T1> a, Stream<T2> b){
+    return map([=](const T1 &x, const T2 &y){return x * y;}, a, b);
 }
 
 template<class T1, class T2, class T3 = decltype(T1() * T2())>
@@ -112,20 +141,34 @@ Stream<T3> scale(Stream<T1> a, const T2 &b){
 
 template<class T1, class T2, class T3 = decltype(T1() * T2())>
 Stream<T3> scale2(Stream<T1> a, const T2 &b){
-    return map([=](T1 x)->T3{return x * b;}, a);
+    return map([=](const T1 &x)->T3{return x * b;}, a);
+}
+
+template<class T1, class T2, class T3 = decltype(T1() * T2())>
+Stream<T3> scale3(Stream<T1> a, const T2 &b){
+    return dot(a, constant(b));
+}
+
+template<class T1, class T2, class T3 = decltype(T1() - T2())>
+Stream<T3> sub(Stream<T1> a, Stream<T2> b){
+    return a->empty() || b->empty() ? _Stream<T3>::Empty
+            : stream<T3>(car(a) - car(b), [=](){return sub(cdr(a), cdr(b));}, "add");
+}
+
+template<class T1, class T2, class T3 = decltype(T1() - T2())>
+Stream<T3> sub2(Stream<T1> a, Stream<T2> b){
+    return map([=](const T1 &x, const T2 &y){return x - y;}, a, b);
+}
+
+template<class T1, class T2, class T3 = decltype(T1() + T2())>
+Stream<T3> sub3(Stream<T1> a, Stream<T2> b){
+    return add(a, scale(b, -1));
 }
 
 template<class T1, class T2, class T3 = decltype(T1() * T2())>
 Stream<T3> mul(Stream<T1> a, Stream<T2> b){
     return a->empty() || b->empty() ? _Stream<T3>::Empty
             : stream<T3>(car(a) * car(b), [=](){return add(scale(cdr(a), car(b)), mul(a, cdr(b)));}, "mul");
-}
-
-template<class T>
-Stream<T> constant(const T &c){
-    Stream<T> ret = stream<T>(c, FStream<T>(), "constant");
-    ret->cdr([ret](){return ret;});
-    return ret;
 }
 
 Stream<int> integer(){

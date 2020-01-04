@@ -32,16 +32,16 @@ class _Stream{
     bool empty_, is_computed;
     
 public:
-    _Stream(const T &car = T(), FStream<T> compute_cdr = FStream<T>(), string tag = "stream", bool empty = false)
+    _Stream(const T &car = T(), FStream<T> compute_cdr = FStream<T>(), const string &tag = "stream", bool empty = false)
             :car_(car), compute_cdr(compute_cdr), tag(tag), empty_(empty), is_computed(false){
-        cerr << "construct " << tag << ", " << (void*)this << ", car: " << car_ << endl;
+        cerr << "construct " << typeid(T).name() << " " << tag << ", " << (void*)this << ", car: " << car_ << endl;
     }
 
     _Stream(_Stream &&r): car_(r.car_), compute_cdr(r.compute_cdr), cdr_(r.cdr_){
     }
 
     ~_Stream(){
-        cerr << "deconstruct " << tag << ", " << (void*)this << ", car: " << car_ << ", cdr: " << (void*)cdr_.get() <<endl;
+        cerr << "deconstruct " << typeid(T).name() << " " << tag << ", " << (void*)this << ", car: " << car_ << ", cdr: " << (void*)cdr_.get() <<endl;
     }
 
     T &car(){
@@ -86,8 +86,8 @@ Stream<T> cdr(Stream<T> s){
 }
 
 template<class T>
-Stream<T> cons(T &car, Stream<T> cdr){
-    return stream(car, [=](){return cdr;}, "cons");
+Stream<T> cons(const T &car, Stream<T> cdr){
+    return stream<T>(car, [=](){return cdr;}, "cons");
 }
 
 template<class F, class T, class R = typename result_of<F(T)>::type>
@@ -111,7 +111,7 @@ Stream<T> slice(Stream<T> s, size_t begin, size_t end, size_t step = 1){
     end -= begin;
     for (; begin && !s->empty(); --begin)
         s = cdr(s);
-    return s->empty() ? _Stream<R>::Empty
+    return s->empty() ? _Stream<T>::Empty
             : stream<T>(car(s), [=](){return slice(s, step, end, step);}, "slice");
 }
 
@@ -119,6 +119,11 @@ template<class T>
 Stream<T> slice(Stream<T> s, size_t n){
     return s->empty() || n == 0 ? s->Empty
             : stream<T>(car(s), [=](){return slice(cdr(s), n - 1);}, "slice_n");
+}
+
+template<class T>
+Stream<T> unit(const T &c = T()){
+    return stream<T>(c, [](){return _Stream<T>::Empty;}, "unit");
 }
 
 template<class T>

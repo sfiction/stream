@@ -12,6 +12,8 @@ using std::function;
 using std::shared_ptr;
 using std::make_shared;
 
+using std::exception;
+
 template<class T>
 class _Stream;
 
@@ -133,6 +135,17 @@ Stream<T3> dot2(Stream<T1> a, Stream<T2> b){
     return map([=](const T1 &x, const T2 &y){return x * y;}, a, b);
 }
 
+template<class T1, class T2, class T3 = decltype(T1() + T2())>
+Stream<T3> add(Stream<T1> a, const T2 &b){
+    return a->empty() ? _Stream<T3>::Empty
+            : stream<T3>(car(a) + b, [=](){return scale(cdr(a), b);}, "add_c");
+}
+
+template<class T1, class T2, class T3 = decltype(T1() + T2())>
+Stream<T3> add2(Stream<T1> a, const T2 &b){
+    return map([=](const T1 &x)->T3{return x + b;}, a);
+}
+
 template<class T1, class T2, class T3 = decltype(T1() * T2())>
 Stream<T3> scale(Stream<T1> a, const T2 &b){
     return a->empty() ? _Stream<T3>::Empty
@@ -171,10 +184,45 @@ Stream<T3> mul(Stream<T1> a, Stream<T2> b){
             : stream<T3>(car(a) * car(b), [=](){return add(scale(cdr(a), car(b)), mul(a, cdr(b)));}, "mul");
 }
 
-Stream<int> integer(){
-    Stream<int> ret = stream<int>(0, FStream<int>(), "integer");
-    ret->cdr([ret](){return add(constant(1), ret);});
+bool is_empty_range(int begin, int end, int step){
+    if (step == 0)
+        throw exception();
+    return begin == end || (step > 0) ^ (begin < end);
+}
+
+Stream<int> range(int begin, int end, int step = 1){
+    return is_empty_range(begin, end, step) ? _Stream<int>::Empty
+            : stream<int>(begin, [=](){return range(begin + step, end, step);}, "range");
+}
+
+Stream<int> range(int end){
+    return range(0, end, 1);
+}
+
+Stream<int> integer(int start = 0){
+    return stream<int>(start, [=](){return integer(start + 1);}, "integer");
+}
+
+Stream<int> range2(int begin, int end, int step = 1){
+    return is_empty_range(begin, end, step) ? _Stream<int>::Empty
+            : add(scale(slice(integer(), (end - begin) / step), step), begin);
+}
+
+Stream<int> integer2(int start = 0){
+    Stream<int> ret = stream<int>(start, FStream<int>(), "integer2");
+    ret->cdr([=](){return add(constant(1), ret);});
     return ret;
+}
+
+Stream<int> fibonacci(int a = 0, int b = 1){
+    return stream<int>(a, [=](){return fibonacci(b, a + b);});
+}
+
+Stream<int> fibonacci2(int a = 0, int b = 1){
+    Stream<int> B = stream<int>(b, FStream<int>(), "fibonacci");
+    Stream<int> A = stream<int>(a, [=](){return B;}, "fibonacci");
+    B->cdr([=](){return add(A, B);});
+    return A;
 }
 
 }

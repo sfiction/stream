@@ -1,3 +1,5 @@
+#pragma once
+
 #include <bits/stdc++.h>
 
 namespace StreamTool{
@@ -181,6 +183,15 @@ Stream<T3> dot2(Stream<T1> a, Stream<T2> b){
     return map([=](const T1 &x, const T2 &y){return x * y;}, a, b);
 }
 
+template<class T1, class T2, class T3 = decltype(T1() * T2())>
+Stream<T3> dotr(Stream<T1> a, Stream<T2> b){
+    if (a->empty())
+        return _Stream<T3>::Empty;
+    if (b->empty())
+        throw exception();
+    return stream<T3>(car(a) / car(b), [=](){return dotr(cdr(a), cdr(b));}, "dotr");
+}
+
 template<class T1, class T2, class T3 = decltype(T1() + T2())>
 Stream<T3> add(Stream<T1> a, const T2 &b){
     return a->empty() ? constant(b)
@@ -202,7 +213,7 @@ template<class T1, class T2, class T3 = decltype(T1() - T2())>
 Stream<T3> sub(Stream<T1> a, Stream<T2> b){
     return a->empty() ? scale(b, -1)
             : b->empty() ? a
-            : stream<T3>(car(a) - car(b), [=](){return sub(cdr(a), cdr(b));}, "add");
+            : stream<T3>(car(a) - car(b), [=](){return sub(cdr(a), cdr(b));}, "sub");
 }
 
 template<class T1, class T2, class T3 = decltype(T1() + T2())>
@@ -226,6 +237,14 @@ Stream<T3> div(Stream<T1> a, Stream<T2> b){
     return stream<T3>(val, [=](){return div(sub(cdr(a), scale(cdr(b), val)), b);}, "div");
 }
 
+template<class T1, class T2, class T3 = decltype(T1() / T2())>
+Stream<T3> div(Stream<T1> a, T2 b){
+    if (b == T2())
+        throw exception();
+    return a->empty() ? _Stream<T3>::Empty
+            : stream<T3>(car(a) / b, [=](){return div(cdr(a), b);}, "div");
+}
+
 template<class T1, class T2 = decltype(1.0 / T1())>
 Stream<T2> inv(Stream<T1> a){
     return div(unit(1.0), a);
@@ -246,8 +265,9 @@ Stream<int> range(int end){
     return range(0, end, 1);
 }
 
-Stream<int> integer(int start = 0){
-    return stream<int>(start, [=](){return integer(start + 1);}, "integer");
+template<class T = int>
+Stream<T> integer(const T &start = 0){
+    return stream<T>(start, [=](){return integer<T>(start + T(1));}, "integer");
 }
 
 Stream<int> range2(int begin, int end, int step = 1){
@@ -255,9 +275,10 @@ Stream<int> range2(int begin, int end, int step = 1){
             : add(scale(slice(integer(), (end - begin) / step), step), begin);
 }
 
-Stream<int> integer2(int start = 0){
-    Stream<int> ret = stream<int>(start, FStream<int>(), "integer2");
-    ret->cdr([=](){return add(constant(1), ret);});
+template<class T = int>
+Stream<T> integer2(const T &start = 0){
+    Stream<T> ret = stream<T>(start, FStream<T>(), "integer2");
+    ret->cdr([=](){return add(constant<T>(1), ret);});
     return ret;
 }
 
@@ -270,6 +291,37 @@ Stream<int> fibonacci2(int a = 0, int b = 1){
     Stream<int> A = stream<int>(a, [=](){return B;}, "fibonacci2");
     B->cdr([=](){return add(A, B);});
     return A;
+}
+
+template<class T>
+Stream<T> integral(Stream<T> a){
+    return a->empty() ? _Stream<T>::Empty
+            : cons<T>(T(0), dotr(a, integer<T>(1)));
+}
+
+template<class T>
+Stream<T> derivation(Stream<T> a){
+    return a->empty() ? _Stream<T>::Empty
+            : dot<T>(cdr(a), integer<T>(1));
+}
+
+template<class T>
+Stream<T> sin();
+
+template<class T>
+Stream<T> cos(){
+    static Stream<T> ret;
+    if (!ret)
+        ret = stream<T>(T(1), [](){return cdr(scale(integral(sin<T>()), -T(1)));}, "cos");
+    return ret;
+}
+
+template<class T>
+Stream<T> sin(){
+    static Stream<T> ret;
+    if (!ret)
+        ret = stream<T>(T(0), [](){return cdr(integral(cos<T>()));}, "sin");
+    return ret;
 }
 
 }

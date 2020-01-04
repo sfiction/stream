@@ -1,7 +1,10 @@
 #include <bits/stdc++.h>
 #include "stream.h"
+#include "fractional.h"
 
 using namespace StreamTool;
+
+using Fractional::Frac;
 
 using std::vector;
 using std::cout;
@@ -83,11 +86,60 @@ void test_fibonacci(){
     cout << "b " << to_vector(slice(b, 10)) << endl;
 }
 
+void test_slice(){
+    auto a = range(1, 12, 3);
+    auto b = slice(integer(), 1, 12, 3);
+
+    cout << "a " << to_vector(a) << endl;
+    cout << "b " << to_vector(b) << endl;
+}
+
+void test_div(){
+    auto a = unit(1.0);
+    auto b = div(a, a);
+    auto c = cons(1, unit(-1));
+    auto d = inv(c);
+    auto e = cons(1, unit(1));
+    auto f = inv(e);
+    auto g = cons(1.0, unit(-2.01));
+    auto h = inv(g);
+
+    cout << "a " << to_vector(a) << endl;
+    cout << "b " << to_vector(b) << endl;
+    cout << "c " << to_vector(c) << endl;
+    cout << "d " << to_vector(d) << endl;
+    cout << "e " << to_vector(e) << endl;
+    cout << "f " << to_vector(f, 20) << endl;
+    cout << "g " << to_vector(g) << endl;
+    cout << "h " << to_vector(h) << endl;
+}
+
+void test_sin(){
+    auto a = constant(1.0);
+    auto b = integral(a);
+    auto c = derivation(b);
+    auto d = sin<double>();
+    auto e = cos<double>();
+    auto f = sin<Frac<long long>>();
+    auto g = cos<Frac<long long>>();
+
+    cout << "a " << to_vector(a) << endl;
+    cout << "b " << to_vector(b) << endl;
+    cout << "c " << to_vector(c) << endl;
+    cout << "d " << to_vector(d) << endl;
+    cout << "e " << to_vector(e) << endl;
+    cout << "f " << to_vector(f) << endl;
+    cout << "g " << to_vector(g) << endl;
+}
+
 int main(){
     test_type();
     test_tool();
     test_range();
     test_fibonacci();
+    test_slice();
+    test_div();
+    test_sin();
 
     return 0;
 }

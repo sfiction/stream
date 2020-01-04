@@ -87,29 +87,44 @@ Stream<T> cdr(Stream<T> s){
 
 template<class T>
 Stream<T> cons(T &car, Stream<T> cdr){
-    return stream(car, [cdr](){return cdr;}, "cons");
+    return stream(car, [=](){return cdr;}, "cons");
 }
 
 template<class F, class T, class R = typename result_of<F(T)>::type>
 Stream<R> map(F func, Stream<T> s){
-    return s->empty() ? _Stream<R>::Empty : stream<R>(func(car(s)), [=](){return map(func, cdr(s));}, "map");
+    return s->empty() ? _Stream<R>::Empty
+            : stream<R>(func(car(s)), [=](){return map(func, cdr(s));}, "map_unary");
 }
 
 template<class F, class T1, class T2, class R = typename result_of<F(T1, T2)>::type>
 Stream<R> map(F func, Stream<T1> a, Stream<T2> b){
     return a->empty() || b->empty() ? _Stream<R>::Empty
-            : stream<R>(func(car(a), car(b)), [=](){return map(func, cdr(a), cdr(b));}, "map");
+            : stream<R>(func(car(a), car(b)), [=](){return map(func, cdr(a), cdr(b));}, "map_binary");
+}
+
+template<class T>
+Stream<T> slice(Stream<T> s, size_t begin, size_t end, size_t step = 1){
+    if (step == 0)
+        throw exception();
+    if (begin >= end)
+        return _Stream<T>::Empty;
+    end -= begin;
+    for (; begin && !s->empty(); --begin)
+        s = cdr(s);
+    return s->empty() ? _Stream<R>::Empty
+            : stream<T>(car(s), [=](){return slice(s, step, end, step);}, "slice");
 }
 
 template<class T>
 Stream<T> slice(Stream<T> s, size_t n){
-    return n == 0 ? s->Empty : stream<T>(car(s), [s, n](){return slice(cdr(s), n - 1);}, "slice");
+    return s->empty() || n == 0 ? s->Empty
+            : stream<T>(car(s), [=](){return slice(cdr(s), n - 1);}, "slice_n");
 }
 
 template<class T>
 Stream<T> constant(const T &c){
     Stream<T> ret = stream<T>(c, FStream<T>(), "constant");
-    ret->cdr([ret](){return ret;});
+    ret->cdr([=](){return ret;});
     return ret;
 }
 
@@ -215,12 +230,12 @@ Stream<int> integer2(int start = 0){
 }
 
 Stream<int> fibonacci(int a = 0, int b = 1){
-    return stream<int>(a, [=](){return fibonacci(b, a + b);});
+    return stream<int>(a, [=](){return fibonacci(b, a + b);}, "fibonacci");
 }
 
 Stream<int> fibonacci2(int a = 0, int b = 1){
-    Stream<int> B = stream<int>(b, FStream<int>(), "fibonacci");
-    Stream<int> A = stream<int>(a, [=](){return B;}, "fibonacci");
+    Stream<int> B = stream<int>(b, FStream<int>(), "fibonacci2");
+    Stream<int> A = stream<int>(a, [=](){return B;}, "fibonacci2");
     B->cdr([=](){return add(A, B);});
     return A;
 }
